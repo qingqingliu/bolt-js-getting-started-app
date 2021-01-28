@@ -6,6 +6,13 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET
 });
 
+if (process.env.DEBUG) {
+  app.use(async (args) => {
+    console.log(JSON.stringify(args));
+    return await args.next();
+  });
+}
+
 // Listens to incoming messages that contain "hello"
 app.message('hello', async ({ message, say }) => {
   console.log('⚡️ hello invoked!');
@@ -30,6 +37,11 @@ app.message('hello', async ({ message, say }) => {
     ],
     text: `Hey there <@${message.user}>!`
   });
+});
+
+app.message("helloyou", async ({ message, say }) => {
+  // say() sends a message to the channel where the event was triggered
+  await say(`Hey there <@${message.user}>!`);
 });
 
 app.action('button_click', async ({ body, ack, say }) => {
