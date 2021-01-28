@@ -8,6 +8,7 @@ const app = new App({
 
 // Listens to incoming messages that contain "hello"
 app.message('hello', async ({ message, say }) => {
+  console.log('⚡️ hello invoked!');
   // say() sends a message to the channel where the event was triggered
   await say({
     blocks: [
