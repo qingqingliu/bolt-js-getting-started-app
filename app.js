@@ -39,15 +39,46 @@ app.message('hello', async ({ message, say }) => {
   });
 });
 
-app.message("helloyou", async ({ message, say }) => {
-  // say() sends a message to the channel where the event was triggered
-  await say(`Hey there <@${message.user}>!`);
-});
 
-app.action('button_click', async ({ body, ack, say }) => {
-  // Acknowledge the action
-  await ack();
-  await say(`<@${body.user.id}> clicked the button`);
+
+// Listen for a slash command invocation
+app.command("/learn", async ({ ack, payload, context }) => {
+  // Acknowledge the command request
+  ack();
+
+  try {
+    const result = await app.client.chat.postEphemeral({
+      token: context.botToken,
+      // Channel to send message to
+      channel: payload.channel_id,
+      user: payload.user_id,
+      // Include a button in the message (or whatever blocks you want!)
+      attachments: [],
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "Finish connecting your Trailhead account"
+          },
+          accessory: {
+            type: "button",
+            style: "primary",
+            text: {
+              type: "plain_text",
+              text: "Connect",
+              emoji: true
+            },
+            url: "https://trailblazer.me",
+            action_id: "button-login"
+          }
+        }
+      ]
+    });
+    console.log(result);
+  } catch (error) {
+    console.error(error);
+  }
 });
 
 (async () => {
