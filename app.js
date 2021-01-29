@@ -1,9 +1,10 @@
-const { App } = require('@slack/bolt');
+const { App } = require("@slack/bolt");
+const axios = require("axios").default;
 
 // Initializes your app with your bot token and signing secret
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
-  signingSecret: process.env.SLACK_SIGNING_SECRET
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
 if (process.env.DEBUG) {
@@ -14,32 +15,30 @@ if (process.env.DEBUG) {
 }
 
 // Listens to incoming messages that contain "hello"
-app.message('hello', async ({ message, say }) => {
-  console.log('⚡️ hello invoked!');
+app.message("hello", async ({ message, say }) => {
+  console.log("⚡️ hello invoked!");
   // say() sends a message to the channel where the event was triggered
   await say({
     blocks: [
       {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": `Hey there <@${message.user}>!`
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `Hey there <@${message.user}>!`,
         },
-        "accessory": {
-          "type": "button",
-          "text": {
-            "type": "plain_text",
-            "text": "Click Me"
+        accessory: {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "Click Me",
           },
-          "action_id": "button_click"
-        }
-      }
+          action_id: "button_click",
+        },
+      },
     ],
-    text: `Hey there <@${message.user}>!`
+    text: `Hey there <@${message.user}>!`,
   });
 });
-
-
 
 // Listen for a slash command invocation
 app.command("/learn", async ({ ack, payload, context }) => {
@@ -47,35 +46,86 @@ app.command("/learn", async ({ ack, payload, context }) => {
   ack();
 
   try {
-    const result = await app.client.chat.postEphemeral({
-      token: context.botToken,
-      // Channel to send message to
-      channel: payload.channel_id,
-      user: payload.user_id,
-      // Include a button in the message (or whatever blocks you want!)
-      attachments: [],
-      blocks: [
-        {
+    var searchText = payload.text;
+    axios
+      .get(
+        `https://trailhead.salesforce.com/services/odata/v1/Content/Trailhead.ModuleContent?$filter=contains(Label,'${searchText}')&$top=5`
+      )
+      .then(function (response) {
+        // handle success
+        var blocks = [];
+        var divider = { type: "divider" };
+        var contentTemplate = {
           type: "section",
           text: {
             type: "mrkdwn",
-            text: "Finish connecting your Trailhead account"
+            text: "",
           },
           accessory: {
-            type: "button",
-            style: "primary",
-            text: {
-              type: "plain_text",
-              text: "Connect",
-              emoji: true
+            type: "image",
+            image_url: "",
+            alt_text: "",
+          },
+        };
+        var actionsTemplate = {
+          type: "actions",
+          elements: [
+            {
+              type: "button",
+              style: "primary",
+              text: {
+                type: "plain_text",
+                text: "Learn",
+                emoji: true,
+              },
+              action_id: "learn",
+              value: "0275bb0f-4784-834b-b62c-ed60eec2ea5f",
             },
-            url: "https://trailblazer.me",
-            action_id: "button-login"
-          }
+            {
+              type: "button",
+              text: {
+                type: "plain_text",
+                text: "Favorite",
+                emoji: true,
+              },
+              action_id: "favorite",
+              value: "0275bb0f-4784-834b-b62c-ed60eec2ea5f",
+            },
+          ],
+        };
+        var values = response.data.value;
+        for (var index = 0; index < values.length; index++) {
+          var value = values[index];
+          blocks.push(divider);
+          var content = JSON.parse(JSON.stringify(contentTemplate));
+          content.text.text = `*${value.Label}*\n${value.Description}`;
+          content.accessory.image_url = value.ImageUrl;
+          content.accessory.alt_text = value.Label;
+          blocks.push(content);
+
+          var actions = JSON.parse(JSON.stringify(actionsTemplate));
+          actions.elements[0].value = value.Id;
+          actions.elements[1].value = value.Id;
+          blocks.push(actions);
         }
-      ]
-    });
-    console.log(result);
+
+        app.client.chat.postEphemeral({
+          token: context.botToken,
+          // Channel to send message to
+          channel: payload.channel_id,
+          user: payload.user_id,
+          // Include a button in the message (or whatever blocks you want!)
+          attachments: [],
+          blocks: blocks,
+        });
+      })
+      .catch(function (error) {
+        // handle error
+        console.log(error);
+      })
+      .then(function () {
+        // always executed
+      });
   } catch (error) {
     console.error(error);
   }
@@ -85,5 +135,5 @@ app.command("/learn", async ({ ack, payload, context }) => {
   // Start your app
   await app.start(process.env.PORT || 3000);
 
-  console.log('⚡️ Bolt app is running!');
+  console.log("⚡️ Bolt app is running!");
 })();
