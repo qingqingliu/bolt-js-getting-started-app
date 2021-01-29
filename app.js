@@ -45,6 +45,7 @@ app.command("/learn", async ({ ack, payload, context }) => {
   // Acknowledge the command request
   ack();
 
+  console.log("⚡️ learn invoked!");
   try {
     var searchText = payload.text;
     axios
@@ -109,12 +110,12 @@ app.command("/learn", async ({ ack, payload, context }) => {
           blocks.push(actions);
         }
 
+        console.log("⚡️ data received");
         app.client.chat.postEphemeral({
           token: context.botToken,
           // Channel to send message to
           channel: payload.channel_id,
           user: payload.user_id,
-          // Include a button in the message (or whatever blocks you want!)
           attachments: [],
           blocks: blocks,
         });
